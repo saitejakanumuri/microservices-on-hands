@@ -50,3 +50,70 @@ but your api-gate-way takes these things so localhost:8083/orders/1
 internally requests localhost:8082/orders/1 and orderService internally calls productservice localhost:8081/products/1
 
 
+
+edgecases:
+1. Distributed Transactional Handling using saga + outbox
+2. duplicate request prevention using idempotency key.
+
+
+
+orderservice schema
+
+create table orders (
+    id bigserial primary key,
+    user_id bigint not null,
+    order_ref varchar(100) not null unique,
+    amount numeric(19,2) not null,
+    status varchar(50) not null,
+    created_at timestamp not null
+);
+
+create table outbox_event (
+    id bigserial primary key,
+    aggregate_type varchar(50) not null,
+    aggregate_id varchar(100) not null,
+    event_type varchar(100) not null,
+    payload text not null,
+    published boolean not null default false,
+    created_at timestamp not null
+);
+
+create table idempotency_record (
+    id bigserial primary key,
+    user_id bigint not null,
+    idempotency_key varchar(200) not null,
+    request_path varchar(200) not null,
+    status varchar(30) not null,
+    response_body text,
+    created_at timestamp not null,
+    unique (user_id, idempotency_key)
+);
+
+paymentservice schema
+create table account (
+    id bigserial primary key,
+    user_id bigint not null unique,
+    balance numeric(19,2) not null,
+    version bigint
+);
+
+create table payment (
+    id bigserial primary key,
+    order_id bigint not null,
+    payment_ref varchar(100),
+    user_id bigint not null,
+    amount numeric(19,2) not null,
+    status varchar(30) not null,
+    created_at timestamp not null,
+    unique (order_id)
+);
+
+create table outbox_event (
+    id bigserial primary key,
+    aggregate_type varchar(50) not null,
+    aggregate_id varchar(100) not null,
+    event_type varchar(100) not null,
+    payload text not null,
+    published boolean not null default false,
+    created_at timestamp not null
+);

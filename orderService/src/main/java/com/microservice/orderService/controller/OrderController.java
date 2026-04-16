@@ -10,8 +10,10 @@ import com.microservice.orderService.ProductClient;
 
 @RestController
 @RequestMapping("/orders")
+@RequiredArgsConstructor
 public class OrderController {
 
+    private final OrderApplicationService orderApplicationService;
     @Autowired
     private ProductClient productClient;
 
@@ -20,4 +22,12 @@ public class OrderController {
         String product = productClient.getProductById(orderId);
         return "Order: " + orderId + " Product: " + product;
     }
+
+    @PostMapping
+    public ResponseEntity<CreateOrderResponse> create(
+        @RequestHeader("Idempotency-key") String idempotencyKey,
+        @RequestBody CreateOrderRequest request)throws Exception {
+        
+        return ResponseEntity.ok(orderApplicationService.createOrder(request,idempotencyKey));
+    } 
 }
